@@ -23,12 +23,12 @@ const logEvent = (type, source) => {
 /**
  * Schedules a fallback fetch if no WebSocket event is received within POLL_DELAY_MS
  */
-export const scheduleFallbackFetch = (fetchFn, eventType) => {
+export const scheduleFallbackFetch = (fetchFn, eventType, param = null) => {
     if (timers[eventType]) clearTimeout(timers[eventType])
 
     timers[eventType] = setTimeout(async () => {
         logEvent(eventType, "fallback poll")
-        await fetchFn()
+        await (param ? fetchFn(param) : fetchFn())
     }, POLL_DELAY_MS)
 }
 
@@ -39,9 +39,16 @@ export const getDevices = async () => {
     return response.data
 }
 
+
 export const getSensorsForDevice = async (deviceId) => {
     logEvent("sensor-fetch", "API")
     const response = await axios.get(`${API_BASE_URL}/device-sensors`, { params: { device_id: deviceId } })
+    return response.data
+}
+
+export const getDeviceSensorReadings = async (deviceId) => {
+    logEvent("sensor-readings-fetch", `API for device ${deviceId}`)
+    const response = await axios.get(`${API_BASE_URL}/device-sensor-readings`, { params: { device_id: deviceId } })
     return response.data
 }
 
@@ -52,8 +59,9 @@ socket.on("device-created", () => {
     scheduleFallbackFetch(getDevices, "device-update")
 })
 
-socket.on("sensor-update", () => {
-    lastEventTimestamps["sensor-update"] = Date.now()
-    logEvent("sensor-update", "WebSocket")
-    scheduleFallbackFetch(getSensorsForDevice, "sensor-update")
+socket.on("sensor-update", (data) => {
+    if (!data.device_id) return
+    lastEventTimestamps[`sensor-update-${data.device_id}`] = Date.now()
+    logEvent("sensor-update", `WebSocket for device ${data.device_id}`)
+    scheduleFallbackFetch(getDeviceSensorReadings, "sensor-update", data.device_id)
 })

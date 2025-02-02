@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import PropTypes from "prop-types"
 import { DataGrid } from "@mui/x-data-grid"
 import { Paper, Typography, Box } from "@mui/material"
-import { getSensorsForDevice, socket, scheduleFallbackFetch } from "../api"
+import { getDeviceSensorReadings, socket, scheduleFallbackFetch } from "../api"
 
 const columns = [
     { field: "id", headerName: "ID", width: 90 },
@@ -19,26 +19,35 @@ export default function SensorTable({ device }) {
 
         const fetchData = async () => {
             try {
-                console.log(`📡 Fetching sensors for device: ${device.name}`)
-                const data = await getSensorsForDevice(device.id)
+                console.log(`📡 Fetching sensor readings for device: ${device.name}`)
+                const data = await getDeviceSensorReadings(device.id)
                 setSensors(data)
-                console.log(`✅ Loaded ${data.length} sensors for ${device.name}`)
+                console.log(`✅ Loaded ${data.length} sensor readings for ${device.name}`)
             } catch (error) {
-                console.error("❌ Error fetching sensors:", error)
+                console.error("❌ Error fetching sensor readings:", error)
             }
         }
 
-        fetchData() // Initial fetch
-        scheduleFallbackFetch(() => getSensorsForDevice(device.id), "sensor-update")
+        // Fetch initial data
+        fetchData().catch(console.error)
+        scheduleFallbackFetch(() => getDeviceSensorReadings(device.id), `sensor-update-${device.id}`)
 
         // Subscribe to WebSocket events
-        socket.emit("subscribeToDevice", device.id)
+        socket.emit("subscribeToDevice", String(device.id))
 
         socket.on("sensor-update", (updatedSensor) => {
-            console.log(`🔄 Sensor updated: ID ${updatedSensor.device_sensor_id}, Value: ${updatedSensor.value}`)
+            console.log("🔄 Incoming WebSocket event:", updatedSensor)
+
+            if (!updatedSensor.device_id || !updatedSensor.value) {
+                console.warn("⚠️ Missing expected fields in WebSocket payload:", updatedSensor)
+                return
+            }
+
+            console.log(`🔄 Sensor updated: ID ${updatedSensor.sensor_id}, Value: ${updatedSensor.value}`)
+
             setSensors((prevSensors) =>
                 prevSensors.map((sensor) =>
-                    sensor.id === updatedSensor.device_sensor_id
+                    sensor.id === updatedSensor.sensor_id // 🔄 Now correctly using `sensor_id`
                         ? { ...sensor, value: updatedSensor.value }
                         : sensor
                 )
@@ -46,6 +55,7 @@ export default function SensorTable({ device }) {
         })
 
         return () => {
+            console.log(`🔌 Unsubscribing from WebSocket for device ${device.id}`)
             socket.off("sensor-update")
         }
     }, [device])

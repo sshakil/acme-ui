@@ -46,6 +46,7 @@ export default function DeviceTable({ onDeviceSelect }) {
             }
         }
 
+        // Fetch initial data
         fetchData().catch(console.error)
 
         scheduleFallbackFetch(fetchData, "device-update")
