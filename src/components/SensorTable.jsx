@@ -32,22 +32,21 @@ export default function SensorTable({ device }) {
         fetchData().catch(console.error)
         scheduleFallbackFetch(() => getDeviceSensorReadings(device.id), `sensor-update-${device.id}`)
 
-        // Subscribe to WebSocket events
-        socket.emit("subscribeToDevice", String(device.id))
+        // Subscribe to WebSocket room for this device
+        socket.emit("subscribeToDevice", `device-${device.id}`)
+        console.log(`📡 Subscribed to WebSocket for device-${device.id}`)
 
         socket.on("sensor-update", (updatedSensor) => {
-            console.log("🔄 Incoming WebSocket event:", updatedSensor)
+            console.log("🔄 sensor-update event:", updatedSensor)
 
-            if (!updatedSensor.device_id || !updatedSensor.value) {
+            if (!updatedSensor.device_sensor_id || !updatedSensor.value) {
                 console.warn("⚠️ Missing expected fields in WebSocket payload:", updatedSensor)
                 return
             }
 
-            console.log(`🔄 Sensor updated: ID ${updatedSensor.sensor_id}, Value: ${updatedSensor.value}`)
-
             setSensors((prevSensors) =>
                 prevSensors.map((sensor) =>
-                    sensor.id === updatedSensor.sensor_id // 🔄 Now correctly using `sensor_id`
+                    sensor.id === updatedSensor.device_sensor_id
                         ? { ...sensor, value: updatedSensor.value }
                         : sensor
                 )

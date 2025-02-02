@@ -1,7 +1,7 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme } from "@mui/material/styles"
 
 // Extracted from the provided image
-const themeColor = "#EB4D4B"; // Closest HEX to match
+const themeColor = "#EB4D4B" // Closest HEX to match
 
 const theme = createTheme({
     palette: {
@@ -34,6 +34,6 @@ const theme = createTheme({
             },
         },
     },
-});
+})
 
-export default theme;
+export default theme
