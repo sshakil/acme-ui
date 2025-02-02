@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import PropTypes from "prop-types"
 import { DataGrid } from "@mui/x-data-grid"
 import { Paper, Typography, Box } from "@mui/material"
-import { getSensorsForDevice } from "../api"
+import { getSensorsForDevice, socket, scheduleFallbackFetch } from "../api"
 
 const columns = [
     { field: "id", headerName: "ID", width: 90 },
@@ -18,13 +18,36 @@ export default function SensorTable({ device }) {
         if (!device) return
 
         const fetchData = async () => {
-            const data = await getSensorsForDevice(device.id)
-            setSensors(data)
+            try {
+                console.log(`📡 Fetching sensors for device: ${device.name}`)
+                const data = await getSensorsForDevice(device.id)
+                setSensors(data)
+                console.log(`✅ Loaded ${data.length} sensors for ${device.name}`)
+            } catch (error) {
+                console.error("❌ Error fetching sensors:", error)
+            }
         }
 
-        fetchData()
-        const interval = setInterval(fetchData, 5000)
-        return () => clearInterval(interval)
+        fetchData() // Initial fetch
+        scheduleFallbackFetch(() => getSensorsForDevice(device.id), "sensor-update")
+
+        // Subscribe to WebSocket events
+        socket.emit("subscribeToDevice", device.id)
+
+        socket.on("sensor-update", (updatedSensor) => {
+            console.log(`🔄 Sensor updated: ID ${updatedSensor.device_sensor_id}, Value: ${updatedSensor.value}`)
+            setSensors((prevSensors) =>
+                prevSensors.map((sensor) =>
+                    sensor.id === updatedSensor.device_sensor_id
+                        ? { ...sensor, value: updatedSensor.value }
+                        : sensor
+                )
+            )
+        })
+
+        return () => {
+            socket.off("sensor-update")
+        }
     }, [device])
 
     if (!device) return <Typography>Select a device to view sensors.</Typography>
