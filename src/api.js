@@ -1,10 +1,10 @@
 import axios from "axios"
 import { io } from "socket.io-client"
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api"
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/acme"
 const POLL_DELAY_MS = parseInt(import.meta.env.VITE_POLL_DELAY_MS) || 180000 // Default: 3 minutes
 
-export const socket = io(API_BASE_URL.replace("/api", ""), { transports: ["websocket"] })
+export const socket = io(API_BASE_URL.replace("/acme", ""), { transports: ["websocket"] })
 
 // Track last event timestamps
 const lastEventTimestamps = {}
