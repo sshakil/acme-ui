@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import PropTypes from "prop-types"
 import { DataGrid } from "@mui/x-data-grid"
 import { Paper, Typography, Box } from "@mui/material"
-import { getDeviceSensorReadings, socket, scheduleFallbackFetch } from "../api"
+import { getLatestSensorsReading, socket, scheduleFallbackFetch } from "../api"
 
 const columns = [
     { field: "id", headerName: "ID", width: 90 },
@@ -19,8 +19,8 @@ export default function SensorTable({ device }) {
 
         const fetchData = async () => {
             try {
-                console.log(`📡 Fetching sensor readings for device: ${device.name}`)
-                const data = await getDeviceSensorReadings(device.id)
+                console.log(`📡 Fetching latest sensor readings for device: ${device.name}`)
+                const data = await getLatestSensorsReading(device.id)
                 setSensors(data)
                 console.log(`✅ Loaded ${data.length} sensor readings for ${device.name}`)
             } catch (error) {
@@ -28,34 +28,30 @@ export default function SensorTable({ device }) {
             }
         }
 
-        // Fetch initial data
         fetchData().catch(console.error)
-        scheduleFallbackFetch(() => getDeviceSensorReadings(device.id), `sensor-update-${device.id}`)
+        scheduleFallbackFetch(() => getLatestSensorsReading(device.id), `sensors-update-${device.id}`)
 
-        // Subscribe to WebSocket room for this device
-        socket.emit("subscribeToDevice", `device-${device.id}`)
-        console.log(`📡 Subscribed to WebSocket for device-${device.id}`)
+        // Subscribe to WebSocket room
+        const room = `device-id-${device.id}`
+        socket.emit("subscribeToDevice", room)
+        console.log(`📡 Subscribed to WebSocket room: ${room}`)
 
-        socket.on("sensor-update", (updatedSensor) => {
-            console.log("🔄 sensor-update event:", updatedSensor)
+        socket.on("sensors-update", (updatedData) => {
+            if (!updatedData.device_id || !updatedData.readings) return
 
-            if (!updatedSensor.device_sensor_id || !updatedSensor.value) {
-                console.warn("⚠️ Missing expected fields in WebSocket payload:", updatedSensor)
-                return
-            }
+            console.log("🔄 sensors-update event:", updatedData)
 
             setSensors((prevSensors) =>
-                prevSensors.map((sensor) =>
-                    sensor.id === updatedSensor.device_sensor_id
-                        ? { ...sensor, value: updatedSensor.value }
-                        : sensor
-                )
+                prevSensors.map((sensor) => {
+                    const updatedSensor = updatedData.readings.find(r => r.device_sensor_id === sensor.id)
+                    return updatedSensor ? { ...sensor, value: updatedSensor.value } : sensor
+                })
             )
         })
 
         return () => {
-            console.log(`🔌 Unsubscribing from WebSocket for device ${device.id}`)
-            socket.off("sensor-update")
+            console.log(`🔌 Unsubscribing from WebSocket room: ${room}`)
+            socket.off("sensors-update")
         }
     }, [device])
 
