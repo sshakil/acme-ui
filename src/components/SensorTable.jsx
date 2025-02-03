@@ -4,12 +4,12 @@ import { DataGrid } from "@mui/x-data-grid"
 import { Paper, Typography, Box } from "@mui/material"
 import { getSensorReadingsForDevice, socket, scheduleFallbackFetch } from "../api"
 
-const columns = [
+const sensorColumns= [
     { field: "id", headerName: "ID", width: 90 },
-    { field: "type", headerName: "Sensor Type", width: 200 },
-    { field: "value", headerName: "Latest Value", width: 150 },
-    { field: "unit", headerName: "Unit", width: 100 },
-    { field: "time", headerName: "Last Updated", width: 200 },
+    { field: "type", headerName: "Type", width: 200 },
+    { field: "value", headerName: "Value", width: 60 },
+    { field: "unit", headerName: "Unit", width: 80 },
+    { field: "time", headerName: "Time", width: 200 },
 ]
 
 export default function SensorTable({ device }) {
@@ -52,11 +52,11 @@ export default function SensorTable({ device }) {
                 setSensors(
                     Object.fromEntries(data.map(sensor => {
                         console.log("sensor,", sensor)
-                        const uniqueId = `${sensor.device_sensor_id}-${sensor.time}` // Ensure unique IDs
+                        const uniqueId = `${sensor.device_sensor_id}-${sensor.time}`
                         return [sensor.device_sensor_id, {
-                            id: uniqueId,  // ✅ Use a unique ID combining `device_sensor_id` + timestamp
-                            type: sensor.DeviceSensor?.sensor?.type || "Unknown",  // ✅ Add Sensor Type
-                            unit: sensor.DeviceSensor?.sensor?.unit || "",        // ✅ Add Unit
+                            id: sensor.device_sensor_id,
+                            type: sensor.type || "Unknown",
+                            unit: sensor.unit || "",
                             value: sensor.value,
                             time: sensor.time
                         }]
@@ -117,19 +117,19 @@ export default function SensorTable({ device }) {
             <Typography variant="h6" color="primary" gutterBottom>
                 Sensor Data for {device.name}
             </Typography>
-            <Box sx={{ height: 400 }}>
+            <Box sx={{ height: 300 }}>
                 <DataGrid
                     rows={Object.values(sensors)}
-                    columns={columns}
-                    pageSize={50} // Display more rows per page
-                    getRowId={(row) => row.id} // Ensure correct ID assignment
+                    columns={sensorColumns}
+                    pageSize={50}
+                    getRowId={(row) => row.id}
                     disableColumnFilter
                     disableColumnMenu
                     disableSelectionOnClick
                     initialState={{
                         pagination: {
                             paginationModel: {
-                                pageSize: 50, // Display 50 rows at a time
+                                pageSize: 50,
                             },
                         },
                     }}

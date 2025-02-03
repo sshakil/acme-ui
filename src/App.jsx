@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Container, Grid, ThemeProvider } from "@mui/material"
+import { ThemeProvider } from "@mui/material"
+import Grid from "@mui/material/Grid2"
 import theme from "./theme"
 import DeviceTable from "./components/DeviceTable.jsx"
 import SensorTable from "./components/SensorTable.jsx"
@@ -9,19 +10,15 @@ function App() {
 
     return (
         <ThemeProvider theme={theme}>
-            <Container maxWidth="lg" sx={{ padding: 3 }}>
-                <Grid container spacing={3}>
-                    {/* Top-Left: Device Table */}
-                    <Grid item xs={5}>
-                        <DeviceTable onDeviceSelect={setSelectedDevice} />
-                    </Grid>
-
-                    {/* Bottom-Left: Sensor Data Table */}
-                    <Grid item xs={7}>
-                        <SensorTable device={selectedDevice} />
-                    </Grid>
+            <Grid container spacing={2}>
+                <Grid xs={12} sx={{  width: "100%"  }}>
+                    <DeviceTable onDeviceSelect={setSelectedDevice} />
                 </Grid>
-            </Container>
+
+                <Grid xs={12} sx={{  width: "100%"}}>
+                    <SensorTable device={selectedDevice} />
+                </Grid>
+            </Grid>
         </ThemeProvider>
     )
 }

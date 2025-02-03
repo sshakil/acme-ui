@@ -6,8 +6,9 @@ import { getDevices, getSensorsForDevice, socket, scheduleFallbackFetch } from "
 
 const columns = [
     { field: "id", headerName: "ID", width: 90 },
-    { field: "name", headerName: "Device Name", width: 200 },
-    { field: "type", headerName: "Type", width: 150 },
+    { field: "name", headerName: "Device Name", width: 150 },
+    { field: "type", headerName: "Type", width: 150
+    },
     {
         field: "hasData",
         headerName: "Status",
@@ -70,7 +71,7 @@ export default function DeviceTable({ onDeviceSelect }) {
 
             {error && <Typography color="error" variant="body2">{error}</Typography>}
 
-            <Box sx={{ height: 400 }}>
+            <Box sx={{ height: 300 }}>
                 <DataGrid
                     rows={devices}
                     columns={columns}
