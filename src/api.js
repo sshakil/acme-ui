@@ -45,9 +45,9 @@ export const getSensorsForDevice = async (deviceId) => {
     return response.data
 }
 
-export const getLatestSensorsReading = async (deviceId) => {
+export const getSensorReadingsForDevice = async (deviceId) => {
     logEvent("sensor-readings-fetch", `API for device ${deviceId}`)
-    const response = await axios.get(`${API_BASE_URL}/latest-sensors-reading/${deviceId}`)
+    const response = await axios.get(`${API_BASE_URL}/sensor-readings/${deviceId}`)
     return response.data
 }
 
@@ -62,12 +62,12 @@ socket.on("sensors-update", (data) => {
     if (!data.device_id) return
     lastEventTimestamps[`sensors-update-${data.device_id}`] = Date.now()
     logEvent("sensors-update", `WebSocket for device ${data.device_id}`)
-    scheduleFallbackFetch(getLatestSensorsReading, "sensors-update", data.device_id)
+    scheduleFallbackFetch(getSensorReadingsForDevice, "sensors-update", data.device_id)
 })
 
 socket.on("sensor-update", (data) => {
     if (!data.device_sensor_id) return
     lastEventTimestamps[`sensor-update-${data.device_sensor_id}`] = Date.now()
     logEvent("sensor-update", `WebSocket for sensor ${data.device_sensor_id}`)
-    scheduleFallbackFetch(getLatestSensorsReading, "sensor-update", data.device_sensor_id)
+    scheduleFallbackFetch(getSensorReadingsForDevice, "sensor-update", data.device_sensor_id)
 })
