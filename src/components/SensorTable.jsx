@@ -9,6 +9,7 @@ const columns = [
     { field: "type", headerName: "Sensor Type", width: 200 },
     { field: "value", headerName: "Latest Value", width: 150 },
     { field: "unit", headerName: "Unit", width: 100 },
+    { field: "time", headerName: "Last Updated", width: 200 }, // For debugging timestamp-based updates
 ]
 
 export default function SensorTable({ device }) {
@@ -32,28 +33,64 @@ export default function SensorTable({ device }) {
         scheduleFallbackFetch(() => getLatestSensorsReading(device.id), `sensors-update-${device.id}`)
 
         // Subscribe to WebSocket room
-        const room = `device-id-${device.id}`
-        socket.emit("subscribeToDevice", room)
-        console.log(`📡 Subscribed to WebSocket room: ${room}`)
+        const deviceRoom = `device-id-${device.id}`
+        socket.emit("subscribeToDevice", deviceRoom)
+        console.log(`📡 Subscribed to WebSocket room: ${deviceRoom}`)
 
+        // Handle bulk updates for all sensors of the device
         socket.on("sensors-update", (updatedData) => {
             if (!updatedData.device_id || !updatedData.readings) return
-
             console.log("🔄 sensors-update event:", updatedData)
 
             setSensors((prevSensors) =>
                 prevSensors.map((sensor) => {
                     const updatedSensor = updatedData.readings.find(r => r.device_sensor_id === sensor.id)
-                    return updatedSensor ? { ...sensor, value: updatedSensor.value } : sensor
+                    if (!updatedSensor) return sensor
+
+                    // Only update if the new reading is more recent
+                    if (new Date(updatedSensor.time) > new Date(sensor.time)) {
+                        return { ...sensor, value: updatedSensor.value, time: updatedSensor.time }
+                    }
+                    return sensor
                 })
             )
         })
 
-        return () => {
-            console.log(`🔌 Unsubscribing from WebSocket room: ${room}`)
-            socket.off("sensors-update")
+        // Handle individual sensor updates
+        const handleSensorUpdate = (updatedSensor) => {
+            if (!updatedSensor.device_sensor_id || !updatedSensor.value) {
+                console.warn("⚠️ Missing expected fields in WebSocket payload:", updatedSensor)
+                return
+            }
+
+            console.log("🔄 sensor-update event:", updatedSensor)
+
+            setSensors((prevSensors) =>
+                prevSensors.map((sensor) =>
+                    sensor.id === updatedSensor.device_sensor_id &&
+                    (!sensor.time || new Date(updatedSensor.time) > new Date(sensor.time))
+                        ? { ...sensor, value: updatedSensor.value, time: updatedSensor.time }
+                        : sensor
+                )
+            )
         }
-    }, [device])
+
+        // Subscribe to individual sensor updates
+        sensors.forEach((sensor) => {
+            const sensorRoom = `device-sensor-id-${sensor.id}`
+            socket.emit("subscribeToDevice", sensorRoom)
+            socket.on(sensorRoom, handleSensorUpdate)
+        })
+
+        return () => {
+            console.log(`🔌 Unsubscribing from WebSocket room: ${deviceRoom}`)
+            socket.off("sensors-update")
+            sensors.forEach((sensor) => {
+                const sensorRoom = `device-sensor-id-${sensor.id}`
+                socket.off(sensorRoom)
+            })
+        }
+    }, [device, sensors])
 
     if (!device) return <Typography>Select a device to view sensors.</Typography>
 
