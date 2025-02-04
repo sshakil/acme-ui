@@ -48,6 +48,7 @@ export default function SensorTable({ device }) {
                 console.log(`📡 Fetching latest sensor readings for device: ${device.name}`)
                 const data = await getSensorReadingsForDevice(device.id)
 
+
                 // Ensure each row has a unique `id` and attach sensor details
                 setSensors(
                     Object.fromEntries(data.map(sensor => {
