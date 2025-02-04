@@ -52,7 +52,6 @@ export default function SensorTable({ device }) {
                 setSensors(
                     Object.fromEntries(data.map(sensor => {
                         console.log("sensor,", sensor)
-                        const uniqueId = `${sensor.device_sensor_id}-${sensor.time}`
                         return [sensor.device_sensor_id, {
                             id: sensor.device_sensor_id,
                             type: sensor.type || "Unknown",
