@@ -26,6 +26,7 @@ export default function SensorTable({ device }) {
         currentDeviceIdRef.current = device.id
 
         const fetchData = async () => {
+            console.log(`📡 Fetching latest sensor readings for device: ${device.name}`)
             try {
                 const data = await getSensorReadingsForDevice(device.id)
 
@@ -40,6 +41,8 @@ export default function SensorTable({ device }) {
                         }
                     ]))
                 )
+
+                console.log(`✅ Loaded ${data.length} sensor readings for ${device.name}`)
             } catch (error) {
                 console.error("❌ Error fetching sensor readings:", error)
             }
@@ -50,10 +53,13 @@ export default function SensorTable({ device }) {
 
         const deviceRoom = `device-id-${device.id}`
         socket.emit("subscribe", deviceRoom)
+        console.log(`📡 Subscribed to WebSocket room: ${deviceRoom}`)
 
         const handleSensorsUpdate = (updatedData) => {
             if (!updatedData.device_id || !updatedData.readings) return
             if (Number(updatedData.device_id) !== Number(currentDeviceIdRef.current)) return
+
+            console.log(`🔄 "sensors-update" event for device ${updatedData.device_id}:`, updatedData)
 
             setSensors(prevSensors => {
                 const updatedSensors = { ...prevSensors }
@@ -75,6 +81,7 @@ export default function SensorTable({ device }) {
         socket.on("sensors-update", handleSensorsUpdate)
 
         return () => {
+            console.log(`🔌 Unsubscribing from WebSocket room: ${deviceRoom}`)
             socket.emit("unsubscribe", deviceRoom)
             socket.off("sensors-update", handleSensorsUpdate)
         }

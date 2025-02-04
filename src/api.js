@@ -4,7 +4,8 @@ import { io } from "socket.io-client"
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/acme"
 const POLL_DELAY_MS = parseInt(import.meta.env.VITE_POLL_DELAY_MS) || 180000 // Default: 3 minutes
 
-export const socket = io(API_BASE_URL.replace("/acme", ""), { transports: ["websocket"] })
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "ws://localhost:4000"
+export const socket = io(SOCKET_URL, { transports: ["websocket"] })
 
 // Track last event timestamps
 const lastEventTimestamps = {}
