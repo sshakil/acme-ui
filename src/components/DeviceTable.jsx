@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react"
+import { useRef, useState, useEffect } from "react"
 import PropTypes from "prop-types"
 import { DataGrid } from "@mui/x-data-grid"
 import { Paper, Typography, Box } from "@mui/material"
 import { getDevices, getSensorsForDevice, socket, scheduleFallbackFetch } from "../api"
 
-// Minimum time between fetches
 const MIN_FETCH_INTERVAL = parseInt(import.meta.env.VITE_MIN_FETCH_INTERVAL) || 1000
 let isFetching = false
 let lastFetchTime = 0
@@ -28,6 +27,7 @@ const columns = [
 export default function DeviceTable({ onDeviceSelect }) {
     const [devices, setDevices] = useState([])
     const [error, setError] = useState(null)
+    const hasSubscribed = useRef(false)  //  Prevent multiple subscriptions
 
     const fetchData = async () => {
         const now = Date.now()
@@ -62,20 +62,36 @@ export default function DeviceTable({ onDeviceSelect }) {
     }
 
     useEffect(() => {
-        // Fetch initial data
         fetchData().catch(console.error)
-
-        // Schedule fallback in case WebSocket updates are missed
         scheduleFallbackFetch(fetchData, "device-update")
 
-        // WebSocket event for new device
-        socket.on("device-created", (newDevice) => {
-            console.log(`🆕 New device added: ${newDevice.name}`)
-            setDevices((prev) => [...prev, { ...newDevice, hasData: false }])
-        })
+        if (!hasSubscribed.current) {
+            const deviceRoom = "device"
+            const deviceCreatedEvent = "device-created"
+            const deviceDeletedEvent = "device-deleted"
+
+            socket.emit("subscribe", deviceRoom)
+            console.log(`📡 Subscribed to WebSocket room: ${deviceRoom}`)
+
+            // Handle device creation
+            socket.on(deviceCreatedEvent, (newDevice) => {
+                console.log(`🆕 Device added: ${newDevice.name}`)
+                setDevices((prev) => [...prev, { ...newDevice, hasData: false }])
+            })
+
+            // Handle device deletion
+            socket.on(deviceDeletedEvent, (data) => {
+                console.log(`🗑️ Device deleted: ${data.id}`)
+                setDevices((prev) => prev.filter(device => Number(device.id) !== Number(data.id)))
+            })
+
+            hasSubscribed.current = true  // Prevent future re-subscribes
+        } else {
+            console.log("♻️ Reused websocket")
+        }
 
         return () => {
-            socket.off("device-created")
+            console.log("🔌 WebSocket staying subscribed to avoid unnecessary unsubscribing")
         }
     }, [])
 

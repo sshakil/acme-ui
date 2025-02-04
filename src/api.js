@@ -55,14 +55,14 @@ export const getSensorReadingsForDevice = async (deviceId) => {
 socket.on("device-created", () => {
     lastEventTimestamps["device-update"] = Date.now()
     logEvent("device-update", "WebSocket")
-    scheduleFallbackFetch(getDevices, "device-update")
+    // scheduleFallbackFetch(getDevices, "device-update")
 })
 
 socket.on("sensors-update", (data) => {
     if (!data.device_id) return
     lastEventTimestamps[`sensors-update-${data.device_id}`] = Date.now()
     logEvent("sensors-update", `WebSocket for device ${data.device_id}`)
-    scheduleFallbackFetch(getSensorReadingsForDevice, "sensors-update", data.device_id)
+    // scheduleFallbackFetch(getSensorReadingsForDevice, "sensors-update", data.device_id)
 })
 
 socket.on("sensor-update", (data) => {
