@@ -4,7 +4,7 @@ Author: Saad Shakil
 [https://sshakil.github.io](https://sshakil.github.io)
 
 ## Table of Contents
-
+- [Root and Sub-Repo Directory Structure](#root-and-sub-repo-directory-structure)
 - [Installation](#installation)
 - [Usage](#usage)
 - [WebSocket Integration](#websocket-integration)
@@ -14,6 +14,23 @@ Author: Saad Shakil
     - [Directory Structure](#directory-structure)
 - [Next Steps](#next-steps)
 - [License](#license)
+
+## Root and Sub-Repo Directory Structure
+If you're interested in exploring the code and setting up a live dev env, this is the structure I used:
+```sh
+ACME
+.
+├── ACME-REST
+├── ACME-simulator
+├── README.md
+├── acme-ui
+└── docker-compose.yml
+```
+##### Repo Links
+[ACME](https://github.com/sshakil/ACME) - Root Proj <br>
+[ACME-REST](https://github.com/sshakil/ACME-REST) - REST API <br>
+[ACME-simulator](https://github.com/sshakil/ACME-simulator) - CLI Simulator <br>
+[acme-ui](https://github.com/sshakil/acme-ui) - React UI (this) <br>
 
 ## Installation
 
