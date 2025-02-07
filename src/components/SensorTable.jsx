@@ -17,10 +17,6 @@ export default function SensorTable({ device }) {
     const currentDeviceIdRef = useRef(null)
 
     useEffect(() => {
-        currentDeviceIdRef.current = device?.id
-    }, [device])
-
-    useEffect(() => {
         if (!device) return
 
         currentDeviceIdRef.current = device.id
@@ -52,29 +48,34 @@ export default function SensorTable({ device }) {
         scheduleFallbackFetch(() => getSensorReadingsForDevice(device.id), `sensors-update-${device.id}`)
 
         const deviceRoom = `device-id-${device.id}`
+        const sensorsRoom = "sensorreading"
         socket.emit("subscribe", deviceRoom)
+        socket.emit("subscribe", sensorsRoom)
         console.log(`📡 Subscribed to WebSocket room: ${deviceRoom}`)
+        console.log(`📡 Subscribed to WebSocket room: ${sensorsRoom}`)
 
-        const handleSensorsUpdate = (updatedData) => {
-            if (!updatedData.device_id || !updatedData.readings) return
-            if (Number(updatedData.device_id) !== Number(currentDeviceIdRef.current)) return
-
-            console.log(`🔄 "sensors-update" event for device ${updatedData.device_id}:`, updatedData)
+        const handleSensorsUpdate = (event) => {
+            console.log(
+                `🔄 ${"sensors-update".toUpperCase()} handler with event:
+                \n ${JSON.stringify(event, null, 2)}`
+            )
+            if (!event.parentResourceId || !event.data) return
+            if (Number(event.parentResourceId) !== Number(currentDeviceIdRef.current)) return
 
             setSensors(prevSensors => {
                 const updatedSensors = { ...prevSensors }
 
-                updatedData.readings.forEach(updatedSensor => {
-                    updatedSensors[updatedSensor.device_sensor_id] = {
-                        id: updatedSensor.device_sensor_id,
-                        type: updatedSensor.type || "Unknown",
-                        unit: updatedSensor.unit || "",
-                        value: updatedSensor.value,
-                        time: updatedSensor.time
+                event.data.forEach(sensorReading => {
+                    updatedSensors[sensorReading.device_sensor_id] = {
+                        id: sensorReading.device_sensor_id,
+                        type: sensorReading.type || "Unknown",
+                        unit: sensorReading.unit || "",
+                        value: sensorReading.value,
+                        time: sensorReading.time
                     }
                 })
 
-                return { ...updatedSensors }
+                return updatedSensors
             })
         }
 
@@ -82,7 +83,9 @@ export default function SensorTable({ device }) {
 
         return () => {
             console.log(`🔌 Unsubscribing from WebSocket room: ${deviceRoom}`)
+            console.log(`🔌 Unsubscribing from WebSocket room: ${sensorsRoom}`)
             socket.emit("unsubscribe", deviceRoom)
+            socket.emit("unsubscribe", sensorsRoom)
             socket.off("sensors-update", handleSensorsUpdate)
         }
     }, [device])

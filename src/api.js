@@ -1,11 +1,12 @@
 import axios from "axios"
-import { io } from "socket.io-client"
+import {io} from "socket.io-client"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/acme"
 const POLL_DELAY_MS = parseInt(import.meta.env.VITE_POLL_DELAY_MS) || 180000 // Default: 3 minutes
+const LOG_LEVEL = import.meta.env.VITE_LOG_LEVEL || "minimal"
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "ws://localhost:4000"
-export const socket = io(SOCKET_URL, { transports: ["websocket"] })
+export const socket = io(SOCKET_URL, {transports: ["websocket"]})
 
 // Track last event timestamps
 const lastEventTimestamps = {}
@@ -16,9 +17,18 @@ const timers = {}
 /**
  * Logs a formatted message with timestamps
  */
-const logEvent = (type, source) => {
+const logEvent = (type, source, event = null, error = false) => {
+    if (LOG_LEVEL === "disabled") return // Skip logging if disabled
+
     const time = new Date().toLocaleTimeString()
-    console.log(`[${time}] 🔄 ${type.toUpperCase()} triggered by ${source}`)
+    const statusIcon = error ? "❌" : "🔄"
+    let logMessage = `[${time}] ${statusIcon} ${type.toUpperCase()} ${error ? "error:" : "triggered by"} ${source}`
+
+    if (LOG_LEVEL === "verbose" && event?.data) {
+        logMessage += ` | Event: ${JSON.stringify(event, null, 2)}`
+    }
+
+    console.log(logMessage)
 }
 
 /**
@@ -53,22 +63,19 @@ export const getSensorReadingsForDevice = async (deviceId) => {
 }
 
 // WebSocket Listeners: Reset the fallback poll when an event is received
-socket.on("device-created", () => {
+socket.on("device-created", (event) => {
     lastEventTimestamps["device-update"] = Date.now()
-    logEvent("device-update", "WebSocket")
+    logEvent("device-update", "WebSocket", event)
     // scheduleFallbackFetch(getDevices, "device-update")
 })
 
-socket.on("sensors-update", (data) => {
-    if (!data.device_id) return
-    lastEventTimestamps[`sensors-update-${data.device_id}`] = Date.now()
-    logEvent("sensors-update", `WebSocket for device ${data.device_id}`)
-    // scheduleFallbackFetch(getSensorReadingsForDevice, "sensors-update", data.device_id)
-})
+socket.on("sensors-update", (event) => {
+    if (!event.parentResourceId || !event.data) {
+        logEvent("sensors-update", "WebSocket event received with missing fields.", event, true)
+        return
+    }
 
-socket.on("sensor-update", (data) => {
-    if (!data.device_sensor_id) return
-    lastEventTimestamps[`sensor-update-${data.device_sensor_id}`] = Date.now()
-    logEvent("sensor-update", `WebSocket for sensor ${data.device_sensor_id}`)
-    scheduleFallbackFetch(getSensorReadingsForDevice, "sensor-update", data.device_sensor_id)
+    lastEventTimestamps[`sensors-update-${event.parentResourceId}`] = Date.now()
+    logEvent("sensors-update", `WebSocket for device ${event.parentResourceId}`, event)
+    // scheduleFallbackFetch(getSensorReadingsForDevice, "sensors-update", data.device_id)
 })
