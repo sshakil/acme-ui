@@ -66,12 +66,12 @@ export default function DeviceTable({ onDeviceSelect }) {
         scheduleFallbackFetch(fetchData, "device-update")
 
         if (!hasSubscribed.current) {
-            const deviceRoom = "device"
+            const devicesRoom = "devices"
             const deviceCreatedEvent = "device-created"
             const deviceDeletedEvent = "device-deleted"
 
-            socket.emit("subscribe", deviceRoom)
-            console.log(`📡 Subscribed to WebSocket room: ${deviceRoom}`)
+            socket.emit("subscribe", devicesRoom)
+            console.log(`📡 Subscribed to WebSocket room: ${devicesRoom}`)
 
             // Handle device creation
             socket.on(deviceCreatedEvent, (newDevice) => {
