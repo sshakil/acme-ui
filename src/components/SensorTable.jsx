@@ -12,6 +12,11 @@ const sensorColumns = [
     { field: "time", headerName: "Time", width: 200 },
 ]
 
+/**
+ * SensorTable displays real-time sensor data for a selected device.
+ * It fetches sensor readings from the API, subscribes to WebSocket updates,
+ * and updates the table dynamically based on incoming data.
+ */
 export default function SensorTable({ device }) {
     const [sensors, setSensors] = useState({})
     const currentDeviceIdRef = useRef(null)

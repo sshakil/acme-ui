@@ -24,6 +24,11 @@ const columns = [
     },
 ]
 
+/**
+ * DeviceTable displays a list of registered devices with their status.
+ * It fetches device data from the API, listens for real-time updates via WebSocket,
+ * and allows selection of a device for further actions.
+ */
 export default function DeviceTable({ onDeviceSelect }) {
     const [devices, setDevices] = useState([])
     const [error, setError] = useState(null)
